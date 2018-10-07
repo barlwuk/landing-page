@@ -12,6 +12,9 @@ if (is_file("config.php")) {
     include "config.php";
 }
 
+// Detect Windows systems
+$windows = defined("PHP_WINDOWS_VERSION_MAJOR");
+
 // Get system status
 if ($windows) {
 
@@ -310,8 +313,68 @@ $ringBase = 339.292;
         <div>Uptime: <span id="uptime"><?php echo $uptime; ?></span></div>
     <?php } ?>
     <div class="footer-end">
-        <a width="150" height="50" href="https://auth0.com/?utm_source=oss&utm_medium=gp&utm_campaign=oss" target="_blank" alt="Single Sign On & Token Based Authentication - Auth0"><img width="150" height="50" alt="JWT Auth for open source projects" src="//cdn.auth0.com/oss/badges/a0-badge-dark.png"/></a>
+        <a href="#" id="detail">More</a>
     </div>
 </footer>
+
+<div class="details" aria-hidden="true">
+    <div>
+        <h2>Recognition</h2>
+        These services have been used in/featured in our developement environment.
+    </div>
+    <div>
+        <a height="50" href="https://staging.core.barlw.uk" target="_blank" alt="VATSIM UK Staging Server (BARLW UK) - Core"><img height="48" alt="JWT Auth for open source projects" src="https://www.vatsim.uk/images/branding/vatsimuk_whiteblue.png"/></a>
+        <a width="150" height="50" href="https://auth0.com/?utm_source=oss&utm_medium=gp&utm_campaign=oss" target="_blank" alt="Single Sign On & Token Based Authentication - Auth0"><img width="150" height="50" alt="JWT Auth for open source projects" src="//cdn.auth0.com/oss/badges/a0-badge-dark.png"/></a>
+    </div>
+</div>
+<script>
+    var ringBase = parseFloat('<?php echo $ringBase; ?>');
+    function update() {
+        var xhr = new XMLHttpRequest();
+        xhr.addEventListener('load', function() {
+            data = JSON.parse(xhr.responseText);
+            // Update footer
+            if (document.getElementById('uptime')) {
+                document.getElementById('uptime').textContent = data.uptime;
+            }
+            document.querySelector('#k-cpu .ring-value').setAttribute('stroke-dashoffset', ringBase * (1 - (data.cpu / 100)));
+            document.querySelector('#k-cpu .ring-label').textContent = Math.round(data.cpu);
+            document.querySelector('#k-memory .ring-value').setAttribute('stroke-dashoffset', ringBase * (1 - (data.memory / 100)));
+            document.querySelector('#k-memory .ring-label').textContent = Math.round(data.memory);
+            if (data.swap_total) {
+                document.querySelector('#k-swap .ring-value').setAttribute('stroke-dashoffset', ringBase * (1 - (data.swap / 100)));
+                document.querySelector('#k-swap .ring-label').textContent = Math.round(data.swap);
+            }
+            // Update details
+            document.getElementById('dt-disk-used').textContent = Math.round(data.disk_used / 10485.76) / 100;
+            document.getElementById('dt-mem-used').textContent = data.memory_used;
+            document.getElementById('dt-num-cpus').textContent = data.num_cpus;
+            if (data.swap_total && document.getElementById('dt-swap-used')) {
+                document.getElementById('dt-swap-used').textContent = data.swap_used;
+            }
+            window.setTimeout(update, 3000);
+        });
+        xhr.open('POST', '<?php echo basename(__FILE__); ?>?json=1');
+        xhr.send();
+    }
+    // Start AJAX update loop
+    update();
+    // Bind events
+    document.getElementById('detail').addEventListener('click', function(e) {
+        let details = document.getElementsByClassName('details')[0];
+        details.classList.add('open');
+        let overlay = document.createElement('div');
+        overlay.className = 'overlay';
+        document.body.appendChild(overlay);
+        e.stopPropagation();
+    });
+    document.body.addEventListener('click', function(e) {
+        if (e.target.className == 'overlay') {
+            let details = document.getElementsByClassName('details')[0];
+            details.classList.remove('open');
+            e.target.remove();
+        }
+    });
+</script>
 </body>
 </html>
